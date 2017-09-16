@@ -1,11 +1,30 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <script src="https://simplewebrtc.com/latest-v2.js"></script> 
-		<script src="gameclient.js"></script> 
+        <script src="https://simplewebrtc.com/latest-v2.js"></script>  
         
     </head>
     <body>
-        <div>things will go in here later</div>
+        <h1>Welcome to Scallywags!</h1>
+		<div>Your game code is: <span id="gameCode">Loading</span></div>
+		<div style="height: 20vh;"></div>
+		<!--<div>Connected Players:
+			<div id="connectedPlayers">None</div>
+		</div>-->
+		<div style="display: flex; flex-direction: row; justify-content: space-between; align-items: flex-start;">
+			<div>
+				<div>Red Team</div>
+				<div id="redTeamPlayers"></div>
+			</div>
+			<div>
+				<div>Undecided</div>
+				<div id="greyTeamPlayers"></div>
+			</div>
+			<div>
+				<div>Blue Team</div>
+				<div id="blueTeamPlayers"></div>
+			</div>
+		</div>
     </body>
+	<script src="gameclient.js"></script>
 </html>

@@ -4,9 +4,25 @@
         <script src="https://simplewebrtc.com/latest-v2.js"></script> 		 
     </head>
     <body>
-        <div>things will go in here later</div>
-		<button id="helloButton">Say hello!</button>
-		<button id="helloButton2">Say hello2!</button>
+		<h1>Welcome to Scallywags - Command Client</h1>
+        
+		<div id="initialInput">
+			<div>Enter Your Game Code</div>
+			<input type="text" id="gameCode" />
+			
+			<div>Enter Your Nickname</div>
+			<input type="text" id="nickname" />
+			
+			<br><br><br><br>
+			<button id="joinGameButton">Join Game</button>
+			
+			<button id="helloButton2">Say Hello</button>
+		</div>
+		
+		<div id="teamAndRoleInput" style="display: none;">
+			<button id="redTeamButton">Join Red Team</button>
+			<button id="blueTeamButton">Join Blue Team</button>
+		</div>
     </body>
 	<script src="commandclient.js"></script>
 </html>
