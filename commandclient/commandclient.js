@@ -5,19 +5,14 @@ var UID = '';
 var team = 'grey';
 var role = 'spectator';
 
-var helloButton2 = document.getElementById('helloButton2');
 var joinGameButton = document.getElementById('joinGameButton');
 var redTeamButton = document.getElementById('redTeamButton');
 var blueTeamButton = document.getElementById('blueTeamButton');
-
-helloButton2.addEventListener('click', function() {
-	console.log('HELLO BUTTON2');
-	var state2 = {
-		'x': '150',
-		'y': 100
-	};
-	webrtc.sendDirectlyToAll('someLabel', 'someType', state2);
-}, false);
+var startGameButton = document.getElementById('startGameButton');
+var upButton = document.getElementById('upButton');
+var leftButton = document.getElementById('leftButton');
+var rightButton = document.getElementById('rightButton');
+var downButton = document.getElementById('downButton');
 
 joinGameButton.addEventListener('click', function() {
 	console.log('Join Game');
@@ -72,6 +67,54 @@ blueTeamButton.addEventListener('click', function() {
 	webrtc.sendDirectlyToAll('GAME', 'PLAYER_SELECTED_TEAM', player);
 }, false);
 
+startGameButton.addEventListener('click', function() {
+	console.log('Start Game');
+	var player = {
+		'nickname': nickname,
+		'UID': UID,
+		'team': team,
+		'role': role
+	};
+	webrtc.sendDirectlyToAll('GAME', 'START_GAME', player);
+}, false);
+
+upButton.addEventListener('click', function() {
+	console.log('Up Clicked');
+	var command = {
+		'vectorX': 0,
+		'vectorY': -1,
+		'team': team
+	};
+	webrtc.sendDirectlyToAll('GAME', 'NAVIGATION', command);
+}, false);
+leftButton.addEventListener('click', function() {
+	console.log('Left clicked');
+	var command = {
+		'vectorX': -1,
+		'vectorY': 0,
+		'team': team
+	};
+	webrtc.sendDirectlyToAll('GAME', 'NAVIGATION', command);
+}, false);
+rightButton.addEventListener('click', function() {
+	console.log('Right clicked');
+	var command = {
+		'vectorX': 1,
+		'vectorY': 0,
+		'team': team
+	};
+	webrtc.sendDirectlyToAll('GAME', 'NAVIGATION', command);
+}, false);
+downButton.addEventListener('click', function() {
+	console.log('Down clicked');
+	var command = {
+		'vectorX': 0,
+		'vectorY': 1,
+		'team': team
+	};
+	webrtc.sendDirectlyToAll('GAME', 'NAVIGATION', command);
+}, false);
+
 function generateUID(length, chars) {
 	console.log("GENERATE UID");
     var result = '';
@@ -83,6 +126,39 @@ var webrtc = new SimpleWebRTC({
     autoRequestMedia: false,
 	debug: false,
 	enableDataChannels: true,
+});
+
+webrtc.on('channelMessage', function (peer, label, data) {
+	
+	//game client should only listen to GAME label messages
+	if (label === 'COMMAND') {
+		console.log("ON MESSAGE", peer, label, data);
+		console.log("PEER", peer);
+		console.log("LABEL", label);
+		console.log("DATA", data);
+		switch (data.type) {
+			case 'FIRST_PLAYER':
+				console.log('first player');
+				if (data.payload.UID === UID) {
+					console.log('you are the first player');
+					document.getElementById('startGame').style.display = 'block';
+				} else {
+					console.log('you are not the first player');
+				}
+				break;
+			case 'GAME_STARTING':
+				console.log('game is starting');
+				document.getElementById('startGame').style.display = 'none';
+				document.getElementById('teamAndRoleInput').style.display = 'none';
+				document.getElementById('titleSection').style.display = 'none';
+				document.getElementById('navigatorCommands').style.display = 'block';
+				break;
+			default:
+				console.log('WARNING, ERROR! TYPE DIDNT MATCH!');
+		}
+	} else {
+		console.log('ignoring message');
+	}
 });
 
 // we have to wait until it's ready

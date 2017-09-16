@@ -5,25 +5,31 @@
         
     </head>
     <body>
-        <h1>Welcome to Scallywags!</h1>
-		<div>Your game code is: <span id="gameCode">Loading</span></div>
-		<div style="height: 20vh;"></div>
-		<!--<div>Connected Players:
-			<div id="connectedPlayers">None</div>
-		</div>-->
-		<div style="display: flex; flex-direction: row; justify-content: space-between; align-items: flex-start;">
-			<div>
-				<div>Red Team</div>
-				<div id="redTeamPlayers"></div>
+		<div id="titleSection">
+			<h1>Welcome to Scallywags!</h1>
+			<div>Your game code is: <span id="gameCode">Loading</span></div>
+			<div style="height: 20vh;"></div>
+		</div>
+        
+		<div id="lobbySection">
+			<div style="display: flex; flex-direction: row; justify-content: space-between; align-items: flex-start;">
+				<div>
+					<div>Red Team</div>
+					<div id="redTeamPlayers"></div>
+				</div>
+				<div>
+					<div>Undecided</div>
+					<div id="greyTeamPlayers"></div>
+				</div>
+				<div>
+					<div>Blue Team</div>
+					<div id="blueTeamPlayers"></div>
+				</div>
 			</div>
-			<div>
-				<div>Undecided</div>
-				<div id="greyTeamPlayers"></div>
-			</div>
-			<div>
-				<div>Blue Team</div>
-				<div id="blueTeamPlayers"></div>
-			</div>
+		</div>
+		
+		<div id="gameCanvas" style="display: none;">
+			<canvas id="canvas"></canvas>
 		</div>
     </body>
 	<script src="gameclient.js"></script>

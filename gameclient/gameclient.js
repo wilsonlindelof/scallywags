@@ -1,6 +1,25 @@
 
 var sessionId = null;
 var players = [];
+var gameState = {};
+var canvas = null;
+var ctx = null;
+var lastTime;
+var shipSpeed = 30; //this should be based on dynamic wind eventually
+var shipWidth = 10;
+var shipHeight = 10;
+
+//crossbrowser shim
+var requestAnimFrame = (function(){
+    return window.requestAnimationFrame       ||
+        window.webkitRequestAnimationFrame ||
+        window.mozRequestAnimationFrame    ||
+        window.oRequestAnimationFrame      ||
+        window.msRequestAnimationFrame     ||
+        function(callback){
+            window.setTimeout(callback, 1000 / 60);
+        };
+})();
 
 var webrtc = new SimpleWebRTC({
     autoRequestMedia: false,
@@ -51,17 +70,16 @@ webrtc.on('leftRoom', function (roomName) {
 });
 
 webrtc.on('channelMessage', function (peer, label, data) {
-	// Only handle messages from your dataChannel
-	console.log("ON MESSAGE", peer, label, data);
-	console.log("PEER", peer);
-	console.log("LABEL", label);
-	console.log("DATA", data);
 	/*if (label !== 'text chat') return;
 	else if (data.type == 'chat') {
 	console.log('Received message: ' + data.payload + ' from ' + peer.id);
 	}*/
 	//game client should only listen to GAME label messages
 	if (label === 'GAME') {
+		console.log("ON MESSAGE", peer, label, data);
+		console.log("PEER", peer);
+		console.log("LABEL", label);
+		console.log("DATA", data);
 		switch (data.type) {
 			case 'PLAYER_JOINED':
 				console.log('A new Player has joined!');
@@ -72,7 +90,10 @@ webrtc.on('channelMessage', function (peer, label, data) {
 					'role': data.payload.role
 				};
 				players.push(player);
-				updatePlayerLobby();
+				if (players.length === 1) {
+					webrtc.sendDirectlyToAll('COMMAND', 'FIRST_PLAYER', player);
+				}
+				updatePlayerLobby();				
 				break;
 			case 'PLAYER_SELECTED_TEAM':
 				console.log('A player has selected a team');
@@ -87,11 +108,105 @@ webrtc.on('channelMessage', function (peer, label, data) {
 				}
 				updatePlayerLobby();
 				break;
+			case 'START_GAME':
+				console.log('start the game');
+				webrtc.sendDirectlyToAll('COMMAND', 'GAME_STARTING', null);
+				gameState = {
+					'red': {
+						'x': 100,
+						'y': 500,
+						'vectorX': 0,
+						'vectorY': 1
+					},
+					'blue': {
+						'x': 900,
+						'y': 500,
+						'vectorX': 0,
+						'vectorY': -1
+					}
+				};
+				document.getElementById('titleSection').style.display = 'none';
+				document.getElementById('lobbySection').style.display = 'none';
+				document.getElementById('gameCanvas').style.display = 'block';
+				canvas = document.getElementById('canvas');
+				ctx = canvas.getContext("2d");
+				canvas.width = 1000;
+				canvas.height = 1000;
+				lastTime = Date.now();
+				gameLoop();
+				break;
+			case 'NAVIGATION':
+				console.log('navigation received');
+				gameState[data.payload.team].vectorX = data.payload.vectorX;
+				gameState[data.payload.team].vectorY = data.payload.vectorY;
+				console.log('VECTORS: ', gameState[data.payload.team].vectorX, gameState[data.payload.team].vectorY);
+				break;
 			default:
 				console.log('WARNING, ERROR! TYPE DIDNT MATCH!');
 		}
+	} else {
+		console.log('ignoring message');
 	}
 });
+
+function gameLoop() {
+	var now = Date.now();
+	var dt = (now - lastTime) / 1000.0;
+	
+	update(dt);
+	render();
+	
+	lastTime = now;
+	requestAnimFrame(gameLoop);
+}
+
+function update(dt) {
+	
+	gameState['red']['x'] = gameState['red']['x'] + (shipSpeed * dt * gameState['red']['vectorX']);
+	gameState['red']['y'] = gameState['red']['y'] + (shipSpeed * dt * gameState['red']['vectorY']);
+	
+	gameState['blue']['x'] = gameState['blue']['x'] + (shipSpeed * dt * gameState['blue']['vectorX']);
+	gameState['blue']['y'] = gameState['blue']['y'] + (shipSpeed * dt * gameState['blue']['vectorY']);
+	
+	if (gameState['red']['x'] < 0) {
+		gameState['red']['x'] = 0;
+	}
+	if (gameState['red']['x'] > 1000) {
+		gameState['red']['x'] = 1000;
+	}
+	if (gameState['red']['y'] < 0) {
+		gameState['red']['y'] = 0;
+	}
+	if (gameState['red']['y'] > 1000) {
+		gameState['red']['y'] = 1000;
+	}
+	
+	if (gameState['blue']['x'] < 0) {
+		gameState['blue']['x'] = 0;
+	}
+	if (gameState['blue']['x'] > 1000) {
+		gameState['blue']['x'] = 1000;
+	}
+	if (gameState['blue']['y'] < 0) {
+		gameState['blue']['y'] = 0;
+	}
+	if (gameState['blue']['y'] > 1000) {
+		gameState['blue']['y'] = 1000;
+	}
+	//check collisions, bullets, etc
+}
+
+function render() {
+	ctx.fillStyle = '#CCCCFF';
+	ctx.fillRect(0, 0, canvas.width, canvas.height);//draw the ocean
+	
+	console.log('red', gameState['red']['x'], gameState['red']['y']);
+	ctx.fillStyle = '#FF0000';
+	ctx.fillRect(gameState['red']['x'] - 5, gameState['red']['y'] - 5, shipWidth, shipHeight);//draw the red
+	
+	ctx.fillStyle = '#0000FF';
+	ctx.fillRect(gameState['blue']['x'] - 5, gameState['blue']['y'] - 5, shipWidth, shipHeight);//draw the blue
+}
 
 function updatePlayerLobby() {
 	console.log('UPDATE PLAYER LOBBY');
