@@ -4,6 +4,7 @@ const app = express();
 
 app.use('/gameclient',express.static(path.join(__dirname, 'gameclient')));
 app.use('/commandclient',express.static(path.join(__dirname, 'commandclient')));
+app.use('/assets',express.static(path.join(__dirname, 'assets')));
 
 app.get('/', function (req, res) {
   res.sendFile(__dirname);

@@ -8,6 +8,7 @@ var lastTime;
 var shipSpeed = 30; //this should be based on dynamic wind eventually
 var shipWidth = 10;
 var shipHeight = 10;
+var shipTurnSpeed = .2;
 
 //crossbrowser shim
 var requestAnimFrame = (function(){
@@ -116,13 +117,17 @@ webrtc.on('channelMessage', function (peer, label, data) {
 						'x': 100,
 						'y': 500,
 						'vectorX': 0,
-						'vectorY': 1
+						'vectorY': 1,
+						'desiredVectorX': 0,
+						'desiredVectorY': 1
 					},
 					'blue': {
 						'x': 900,
 						'y': 500,
 						'vectorX': 0,
-						'vectorY': -1
+						'vectorY': -1,
+						'desiredVectorX': 0,
+						'desiredVectorY': -1
 					}
 				};
 				document.getElementById('titleSection').style.display = 'none';
@@ -137,9 +142,9 @@ webrtc.on('channelMessage', function (peer, label, data) {
 				break;
 			case 'NAVIGATION':
 				console.log('navigation received');
-				gameState[data.payload.team].vectorX = data.payload.vectorX;
-				gameState[data.payload.team].vectorY = data.payload.vectorY;
-				console.log('VECTORS: ', gameState[data.payload.team].vectorX, gameState[data.payload.team].vectorY);
+				gameState[data.payload.team].desiredVectorX = data.payload.vectorX;
+				gameState[data.payload.team].desiredVectorY = data.payload.vectorY;
+				console.log('VECTORS: ', gameState[data.payload.team].desiredVectorX, gameState[data.payload.team].desiredVectorY);
 				break;
 			default:
 				console.log('WARNING, ERROR! TYPE DIDNT MATCH!');
@@ -163,10 +168,46 @@ function gameLoop() {
 function update(dt) {
 	
 	gameState['red']['x'] = gameState['red']['x'] + (shipSpeed * dt * gameState['red']['vectorX']);
-	gameState['red']['y'] = gameState['red']['y'] + (shipSpeed * dt * gameState['red']['vectorY']);
+	gameState['red']['y'] = gameState['red']['y'] + (shipSpeed * dt * gameState['red']['vectorY']);	
+	
+	//console.log('x is going', ( ((-gameState['red']['vectorX'] + gameState['red']['desiredVectorX']) > 0) ? 1 : ( ((-gameState['red']['vectorX'] + gameState['red']['desiredVectorX']) < 0) ? -1 : 0 ) ) );
+	//console.log('y is going', ( ((-gameState['red']['vectorY'] + gameState['red']['desiredVectorY']) > 0) ? 1 : ( ((-gameState['red']['vectorY'] + gameState['red']['desiredVectorY']) < 0) ? -1 : 0 ) ) );
+	
+	gameState['red']['vectorX'] = gameState['red']['vectorX'] + (shipTurnSpeed * dt * ( ((-gameState['red']['vectorX'] + gameState['red']['desiredVectorX']) > 0) ? 1 : ( ((-gameState['red']['vectorX'] + gameState['red']['desiredVectorX']) < 0) ? -1 : 0 ) ) );
+	gameState['red']['vectorY'] = gameState['red']['vectorY'] + (shipTurnSpeed * dt * ( ((-gameState['red']['vectorY'] + gameState['red']['desiredVectorY']) > 0) ? 1 : ( ((-gameState['red']['vectorY'] + gameState['red']['desiredVectorY']) < 0) ? -1 : 0 ) ) );
+	
+	
+	if (gameState['red']['vectorX'] > 1) {
+		gameState['red']['vectorX'] = 1;
+	}
+	if (gameState['red']['vectorX'] < -1) {
+		gameState['red']['vectorX'] = -1;
+	}
+	if (gameState['red']['vectorY'] > 1) {
+		gameState['red']['vectorY'] = 1;
+	}
+	if (gameState['red']['vectorY'] < -1) {
+		gameState['red']['vectorY'] = -1;
+	}
 	
 	gameState['blue']['x'] = gameState['blue']['x'] + (shipSpeed * dt * gameState['blue']['vectorX']);
 	gameState['blue']['y'] = gameState['blue']['y'] + (shipSpeed * dt * gameState['blue']['vectorY']);
+	
+	gameState['blue']['vectorX'] = gameState['blue']['vectorX'] + (shipTurnSpeed * dt * ( ((-gameState['blue']['vectorX'] + gameState['blue']['desiredVectorX']) > 0) ? 1 : ( ((-gameState['blue']['vectorX'] + gameState['blue']['desiredVectorX']) < 0) ? -1 : 0 ) ) );
+	gameState['blue']['vectorY'] = gameState['blue']['vectorY'] + (shipTurnSpeed * dt * ( ((-gameState['blue']['vectorY'] + gameState['blue']['desiredVectorY']) > 0) ? 1 : ( ((-gameState['blue']['vectorY'] + gameState['blue']['desiredVectorY']) < 0) ? -1 : 0 ) ) );
+	
+	if (gameState['blue']['vectorX'] > 1) {
+		gameState['blue']['vectorX'] = 1;
+	}
+	if (gameState['blue']['vectorX'] < -1) {
+		gameState['blue']['vectorX'] = -1;
+	}
+	if (gameState['blue']['vectorY'] > 1) {
+		gameState['blue']['vectorY'] = 1;
+	}
+	if (gameState['blue']['vectorY'] < -1) {
+		gameState['blue']['vectorY'] = -1;
+	}
 	
 	if (gameState['red']['x'] < 0) {
 		gameState['red']['x'] = 0;
@@ -200,12 +241,26 @@ function render() {
 	ctx.fillStyle = '#CCCCFF';
 	ctx.fillRect(0, 0, canvas.width, canvas.height);//draw the ocean
 	
-	console.log('red', gameState['red']['x'], gameState['red']['y']);
-	ctx.fillStyle = '#FF0000';
-	ctx.fillRect(gameState['red']['x'] - 5, gameState['red']['y'] - 5, shipWidth, shipHeight);//draw the red
+	//132, 448,
 	
-	ctx.fillStyle = '#0000FF';
-	ctx.fillRect(gameState['blue']['x'] - 5, gameState['blue']['y'] - 5, shipWidth, shipHeight);//draw the blue
+	drawRotated('../assets/Ship01.png', gameState['red']['x'], gameState['red']['y'], 44, 150, gameState['red']['vectorX'], gameState['red']['vectorY'])
+	
+	/*ctx.drawImage(resources.get('../assets/Ship01.png'), 
+		gameState['blue']['x'], gameState['blue']['y'],
+		44, 150);*/
+		
+	drawRotated('../assets/Ship01.png', gameState['blue']['x'], gameState['blue']['y'], 44, 150, gameState['blue']['vectorX'], gameState['blue']['vectorY'])
+}
+
+function drawRotated(imageURL, x, y, width, height, vectorX, vectorY) {
+	ctx.translate(x, y);
+	var angleInRadians = Math.atan2(vectorY, vectorX);
+	ctx.rotate(angleInRadians + (.5 * Math.PI)); //this is just because the thing is up when default is facing right.
+	ctx.drawImage(resources.get(imageURL), 
+		-(width / 2), -(height / 2),
+		width, height);
+	ctx.rotate(-angleInRadians - (.5 * Math.PI));
+	ctx.translate(-x, -y);
 }
 
 function updatePlayerLobby() {
@@ -236,4 +291,8 @@ function updatePlayerLobby() {
 	blueTeamPlayersDiv.innerHTML = blueTeamPlayersHTML;
 }
 
-initialize();
+resources.load([
+    '../assets/Ship01.png',
+	'../assets/Ship02.png'
+]);
+resources.onReady(initialize);
