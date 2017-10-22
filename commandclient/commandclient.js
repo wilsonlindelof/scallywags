@@ -13,10 +13,7 @@ var gunnerTeamButton = document.getElementById('gunnerTeamButton');
 var shootLeftButton = document.getElementById('shootLeftButton');
 var shootRightButton = document.getElementById('shootRightButton');
 var startGameButton = document.getElementById('startGameButton');
-var upButton = document.getElementById('upButton');
-var leftButton = document.getElementById('leftButton');
-var rightButton = document.getElementById('rightButton');
-var downButton = document.getElementById('downButton');
+var compass = document.getElementById('compass');
 
 joinGameButton.addEventListener('click', function() {
 	console.log('Join Game');
@@ -121,58 +118,46 @@ startGameButton.addEventListener('click', function() {
 	webrtc.sendDirectlyToAll('GAME', 'START_GAME', player);
 }, false);
 
-upButton.addEventListener('click', function() {
-	console.log('Up Clicked');
-	var command = {
-		'vectorX': 0,
-		'vectorY': -1,
-		'team': team
-	};
-	webrtc.sendDirectlyToAll('GAME', 'NAVIGATION', command);
-}, false);
-leftButton.addEventListener('click', function() {
-	console.log('Left clicked');
-	var command = {
-		'vectorX': -1,
-		'vectorY': 0,
-		'team': team
-	};
-	webrtc.sendDirectlyToAll('GAME', 'NAVIGATION', command);
-}, false);
-rightButton.addEventListener('click', function() {
-	console.log('Right clicked');
-	var command = {
-		'vectorX': 1,
-		'vectorY': 0,
-		'team': team
-	};
-	webrtc.sendDirectlyToAll('GAME', 'NAVIGATION', command);
-}, false);
-downButton.addEventListener('click', function() {
-	console.log('Down clicked');
-	var command = {
-		'vectorX': 0,
-		'vectorY': 1,
-		'team': team
-	};
-	webrtc.sendDirectlyToAll('GAME', 'NAVIGATION', command);
-}, false);
-
 shootLeftButton.addEventListener('click', function() {
 	console.log('Shoot Left clicked');
 	var command = {
-		'direction': 'left',
+		'direction': 'LEFT',
 		'team': team
 	};
 	webrtc.sendDirectlyToAll('GAME', 'GUNNER', command);
 }, false);
+
 shootRightButton.addEventListener('click', function() {
 	console.log('Shoot Right clicked');
 	var command = {
-		'direction': 'left',
+		'direction': 'RIGHT',
 		'team': team
 	};
 	webrtc.sendDirectlyToAll('GAME', 'GUNNER', command);
+}, false);
+
+compass.addEventListener('click', function(event) {
+	console.log('compass clicked');
+
+	let height = compass.height;
+	let center = compass.height / 2;
+	let clickX = event.offsetX;
+	let clickY = event.offsetY;
+	let centerDiffX = clickX - center;
+	let centerDiffY = clickY - center;
+	
+	let degreesAdj = (((Math.atan2(centerDiffY, centerDiffX) * 180) / Math.PI + 180) - 90);
+	if (degreesAdj < 0) {
+		degreesAdj = degreesAdj + 360;
+	}
+	degreesAdj = +(degreesAdj.toFixed(0));
+	console.log(degreesAdj);
+	
+	var command = {
+		'desiredDegree': degreesAdj,
+		'team': team
+	};
+	webrtc.sendDirectlyToAll('GAME', 'NAVIGATION', command);
 }, false);
 
 function generateUID(length, chars) {
@@ -258,6 +243,5 @@ webrtc.on('createdPeer', function (peer) {
 webrtc.on('leftRoom', function (roomName) {		
     console.log('LEFT ROOM BYE BYE: ', roomName);
 });
-
 
 initialize();

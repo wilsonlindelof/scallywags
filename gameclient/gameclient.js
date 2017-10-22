@@ -8,7 +8,7 @@ var lastTime;
 var shipSpeed = 30; //this should be based on dynamic wind eventually
 var shipWidth = 10;
 var shipHeight = 10;
-var shipTurnSpeed = .2;
+var shipTurnSpeed = 20;
 
 //crossbrowser shim
 var requestAnimFrame = (function(){
@@ -127,20 +127,16 @@ webrtc.on('channelMessage', function (peer, label, data) {
 					'red': {
 						'x': 100,
 						'y': 500,
-						'vectorX': 0,
-						'vectorY': 1,
-						'desiredVectorX': 0,
-						'desiredVectorY': 1,
+						'vectorDegree': 90,						
+						'desiredDegree': 90,
 						'lastShot': now,
 						'cannonballs': []
 					},
 					'blue': {
 						'x': 900,
 						'y': 500,
-						'vectorX': 0,
-						'vectorY': -1,
-						'desiredVectorX': 0,
-						'desiredVectorY': -1,
+						'vectorDegree': 270,						
+						'desiredDegree': 270,
 						'lastShot': now,
 						'cannonballs': []
 					}
@@ -157,9 +153,7 @@ webrtc.on('channelMessage', function (peer, label, data) {
 				break;
 			case 'NAVIGATION':
 				console.log('navigation received');
-				gameState[data.payload.team].desiredVectorX = data.payload.vectorX;
-				gameState[data.payload.team].desiredVectorY = data.payload.vectorY;
-				console.log('VECTORS: ', gameState[data.payload.team].desiredVectorX, gameState[data.payload.team].desiredVectorY);
+				gameState[data.payload.team].desiredDegree = data.payload.desiredDegree;
 				break;
 			case 'GUNNER':
 				console.log('gunnery received');
@@ -169,10 +163,8 @@ webrtc.on('channelMessage', function (peer, label, data) {
 						'timeLeft': 4000,
 						'x': gameState[data.payload.team].x,
 						'y': gameState[data.payload.team].y,
-						'vectorX': gameState[data.payload.team].vectorX,
-						'vectorY': gameState[data.payload.team].vectorY,
+						'vectorDegree': (data.payload.direction === 'LEFT' ? gameState[data.payload.team].vectorDegree - 75 : gameState[data.payload.team].vectorDegree + 75 ),
 					};
-					//need to take the data.payload.direction to determine the actual direction, but you might as well figure out ship steering for real at the same time.
 					gameState[data.payload.team].cannonballs.push(cannonball);
 					gameState[data.payload.team].lastShot = nowG;
 				}
@@ -198,110 +190,94 @@ function gameLoop() {
 
 function update(dt) {
 	
-	gameState['red']['x'] = gameState['red']['x'] + (shipSpeed * dt * gameState['red']['vectorX']);
-	gameState['red']['y'] = gameState['red']['y'] + (shipSpeed * dt * gameState['red']['vectorY']);	
-	
-	gameState['red']['vectorX'] = gameState['red']['vectorX'] + (shipTurnSpeed * dt * ( ((-gameState['red']['vectorX'] + gameState['red']['desiredVectorX']) > 0) ? 1 : ( ((-gameState['red']['vectorX'] + gameState['red']['desiredVectorX']) < 0) ? -1 : 0 ) ) );
-	gameState['red']['vectorY'] = gameState['red']['vectorY'] + (shipTurnSpeed * dt * ( ((-gameState['red']['vectorY'] + gameState['red']['desiredVectorY']) > 0) ? 1 : ( ((-gameState['red']['vectorY'] + gameState['red']['desiredVectorY']) < 0) ? -1 : 0 ) ) );
-	
-	
-	if (gameState['red']['vectorX'] > 1) {
-		gameState['red']['vectorX'] = 1;
-	}
-	if (gameState['red']['vectorX'] < -1) {
-		gameState['red']['vectorX'] = -1;
-	}
-	if (gameState['red']['vectorY'] > 1) {
-		gameState['red']['vectorY'] = 1;
-	}
-	if (gameState['red']['vectorY'] < -1) {
-		gameState['red']['vectorY'] = -1;
-	}
-	
-	gameState['blue']['x'] = gameState['blue']['x'] + (shipSpeed * dt * gameState['blue']['vectorX']);
-	gameState['blue']['y'] = gameState['blue']['y'] + (shipSpeed * dt * gameState['blue']['vectorY']);
-	
-	gameState['blue']['vectorX'] = gameState['blue']['vectorX'] + (shipTurnSpeed * dt * ( ((-gameState['blue']['vectorX'] + gameState['blue']['desiredVectorX']) > 0) ? 1 : ( ((-gameState['blue']['vectorX'] + gameState['blue']['desiredVectorX']) < 0) ? -1 : 0 ) ) );
-	gameState['blue']['vectorY'] = gameState['blue']['vectorY'] + (shipTurnSpeed * dt * ( ((-gameState['blue']['vectorY'] + gameState['blue']['desiredVectorY']) > 0) ? 1 : ( ((-gameState['blue']['vectorY'] + gameState['blue']['desiredVectorY']) < 0) ? -1 : 0 ) ) );
-	
-	if (gameState['blue']['vectorX'] > 1) {
-		gameState['blue']['vectorX'] = 1;
-	}
-	if (gameState['blue']['vectorX'] < -1) {
-		gameState['blue']['vectorX'] = -1;
-	}
-	if (gameState['blue']['vectorY'] > 1) {
-		gameState['blue']['vectorY'] = 1;
-	}
-	if (gameState['blue']['vectorY'] < -1) {
-		gameState['blue']['vectorY'] = -1;
-	}
-	
-	if (gameState['red']['x'] < 0) {
-		gameState['red']['x'] = 0;
-	}
-	if (gameState['red']['x'] > 1000) {
-		gameState['red']['x'] = 1000;
-	}
-	if (gameState['red']['y'] < 0) {
-		gameState['red']['y'] = 0;
-	}
-	if (gameState['red']['y'] > 1000) {
-		gameState['red']['y'] = 1000;
-	}
-	
-	if (gameState['blue']['x'] < 0) {
-		gameState['blue']['x'] = 0;
-	}
-	if (gameState['blue']['x'] > 1000) {
-		gameState['blue']['x'] = 1000;
-	}
-	if (gameState['blue']['y'] < 0) {
-		gameState['blue']['y'] = 0;
-	}
-	if (gameState['blue']['y'] > 1000) {
-		gameState['blue']['y'] = 1000;
-	}
-	//check collisions, bullets, etc
-	gameState['red'].cannonballs.forEach(function(cannonball) {
-		cannonball['x'] = cannonball['x'] + (shipSpeed * 2.5 * dt * cannonball['vectorX']);
-		cannonball['y'] = cannonball['y'] + (shipSpeed * 2.5 * dt * cannonball['vectorY']);	
-		// if (collision)
+	let teamKeys = Object.keys(gameState);
+	teamKeys.forEach(function (team) {
+		//team is 'red' or 'blue'
+		
+		//if its less than 2 degrees off, just let it keep the same bearing
+		if (gameState[team]['desiredDegree'] - gameState[team]['vectorDegree'] >= 2 || gameState[team]['desiredDegree'] - gameState[team]['vectorDegree'] <= -2) {			
+			
+			let clockwise = -1;
+			let desired = 0;
+			let vector = gameState[team]['vectorDegree'] - gameState[team]['desiredDegree'];
+			if (vector < 0) {
+				vector = vector + 360;
+			} else if (vector > 360) {
+				vector = vector - 360;
+			}
+			
+			if (vector >= 180) {
+				clockwise = 1;
+			}
+			
+			gameState[team]['vectorDegree'] = gameState[team]['vectorDegree'] + (shipTurnSpeed * dt * clockwise);
+			if (gameState[team]['vectorDegree'] >= 360) {
+				gameState[team]['vectorDegree'] = 0;
+			} else if (gameState[team]['vectorDegree'] <= 0) {
+				gameState[team]['vectorDegree'] = 360;
+			}
+			
+		}
+		
+		//this 90 is kind of magic, without it they go sideways. oh well whatevs.
+		let vectorRadians = (((gameState[team]['vectorDegree'] - 90) * Math.PI) / 180);
+		gameState[team]['x'] = gameState[team]['x'] + (shipSpeed * dt * Math.cos(vectorRadians));
+		gameState[team]['y'] = gameState[team]['y'] + (shipSpeed * dt * Math.sin(vectorRadians));
+		
+		if (gameState[team]['x'] < 0) {
+			gameState[team]['x'] = 0;
+		}
+		if (gameState[team]['x'] > 1000) {
+			gameState[team]['x'] = 1000;
+		}
+		if (gameState[team]['y'] < 0) {
+			gameState[team]['y'] = 0;
+		}
+		if (gameState[team]['y'] > 1000) {
+			gameState[team]['y'] = 1000;
+		}
+		
+		//check collisions, bullets, etc
+		gameState[team].cannonballs.forEach(function(cannonball) {
+			let cannonballRadians = (((cannonball['vectorDegree'] - 90) * Math.PI) / 180);
+			cannonball['x'] = cannonball['x'] + (shipSpeed * 4 * dt * Math.cos(cannonballRadians));
+			cannonball['y'] = cannonball['y'] + (shipSpeed * 4 * dt * Math.sin(cannonballRadians));	
+			// if (collision) or if timeout
+		});
+		
 	});
-	gameState['blue'].cannonballs.forEach(function(cannonball) {
-		cannonball['x'] = cannonball['x'] + (shipSpeed * 2.5 * dt * cannonball['vectorX']);
-		cannonball['y'] = cannonball['y'] + (shipSpeed * 2.5 * dt * cannonball['vectorY']);
-		// if (collision)
-	});
+	
 }
 
 function render() {
 	ctx.fillStyle = '#CCCCFF';
 	ctx.fillRect(0, 0, canvas.width, canvas.height);//draw the ocean
 	
-	//132, 448,
-	
-	drawRotated('../assets/Ship01.png', gameState['red']['x'], gameState['red']['y'], 44, 150, gameState['red']['vectorX'], gameState['red']['vectorY']);
+	ctx.fillStyle = '#222222';
+	//update this with degrees
+	let teamKeys = Object.keys(gameState);
+	teamKeys.forEach(function (team) {
 		
-	drawRotated('../assets/Ship01.png', gameState['blue']['x'], gameState['blue']['y'], 44, 150, gameState['blue']['vectorX'], gameState['blue']['vectorY']);
-	
-	ctx.fillStyle = '#222222';	
-	gameState['red'].cannonballs.forEach(function(cannonball) {
-		ctx.fillRect(cannonball.x, cannonball.y, 5, 5);
+		drawRotated('../assets/Ship01.png', gameState[team]['x'], gameState[team]['y'], 44, 150, gameState[team]['vectorDegree']);
+		
+		gameState[team].cannonballs.forEach(function(cannonball) {
+			ctx.fillRect(cannonball.x, cannonball.y, 5, 5);
+		});	
 	});
-	gameState['blue'].cannonballs.forEach(function(cannonball) {
-		ctx.fillRect(cannonball.x, cannonball.y, 5, 5);
-	});	
+	
 }
 
-function drawRotated(imageURL, x, y, width, height, vectorX, vectorY) {
+function drawRotated(imageURL, x, y, width, height, vectorDegree) {
 	ctx.translate(x, y);
-	var angleInRadians = Math.atan2(vectorY, vectorX);
-	ctx.rotate(angleInRadians + (.5 * Math.PI)); //this is just because the thing is up when default is facing right.
+	//var angleInRadians = Math.atan2(vectorY, vectorX);
+	var angleInRadians = (vectorDegree * (Math.PI/180));
+	//ctx.rotate(angleInRadians + (.5 * Math.PI)); //this is just because the thing is up when default is facing right.
+	ctx.rotate(angleInRadians);
 	ctx.drawImage(resources.get(imageURL), 
 		-(width / 2), -(height / 2),
 		width, height);
-	ctx.rotate(-angleInRadians - (.5 * Math.PI));
+	//ctx.rotate(-angleInRadians - (.5 * Math.PI));
+	ctx.rotate(-angleInRadians);
 	ctx.translate(-x, -y);
 }
 
@@ -334,7 +310,6 @@ function updatePlayerLobby() {
 }
 
 resources.load([
-    '../assets/Ship01.png',
-	'../assets/Ship02.png'
+    '../assets/Ship01.png'
 ]);
 resources.onReady(initialize);
