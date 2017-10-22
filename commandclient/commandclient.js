@@ -8,6 +8,10 @@ var role = 'spectator';
 var joinGameButton = document.getElementById('joinGameButton');
 var redTeamButton = document.getElementById('redTeamButton');
 var blueTeamButton = document.getElementById('blueTeamButton');
+var navigatorButton = document.getElementById('navigatorButton');
+var gunnerTeamButton = document.getElementById('gunnerTeamButton');
+var shootLeftButton = document.getElementById('shootLeftButton');
+var shootRightButton = document.getElementById('shootRightButton');
 var startGameButton = document.getElementById('startGameButton');
 var upButton = document.getElementById('upButton');
 var leftButton = document.getElementById('leftButton');
@@ -17,7 +21,7 @@ var downButton = document.getElementById('downButton');
 joinGameButton.addEventListener('click', function() {
 	console.log('Join Game');
 	var gameCodeInput = document.getElementById('gameCode');	
-	var gameCode = gameCodeInput.value;
+	var gameCode = gameCodeInput.value.toUpperCase();
 	var nicknameInput = document.getElementById('nickname');
 	nickname = nicknameInput.value;
 	if (!nickname || !(nickname.length > 0)) {
@@ -34,7 +38,8 @@ joinGameButton.addEventListener('click', function() {
 				'role': role
 			};
 			document.getElementById('initialInput').style.display = 'none';
-			document.getElementById('teamAndRoleInput').style.display = 'block';
+			document.getElementById('teamInput').style.display = 'block';
+			document.getElementById('roleInput').style.display = 'block';
 			setTimeout(function() {
 				console.log('just gonna send it');
 				webrtc.sendDirectlyToAll('GAME', 'PLAYER_JOINED', player);
@@ -46,6 +51,7 @@ joinGameButton.addEventListener('click', function() {
 redTeamButton.addEventListener('click', function() {
 	console.log('Join Red Team');
 	team = 'red';
+	role = 'spectator';
 	var player = {
 		'nickname': nickname,
 		'UID': UID,
@@ -53,11 +59,16 @@ redTeamButton.addEventListener('click', function() {
 		'role': role
 	};
 	webrtc.sendDirectlyToAll('GAME', 'PLAYER_SELECTED_TEAM', player);
+	document.getElementById('redTeamButton').style.display = 'none';
+	document.getElementById('blueTeamButton').style.display = 'block';
+	document.getElementById('navigatorButton').style.display = 'block';
+	document.getElementById('gunnerTeamButton').style.display = 'block';
 }, false);
 
 blueTeamButton.addEventListener('click', function() {
 	console.log('Join Blue Team');
 	team = 'blue';
+	role = 'spectator';
 	var player = {
 		'nickname': nickname,
 		'UID': UID,
@@ -65,6 +76,38 @@ blueTeamButton.addEventListener('click', function() {
 		'role': role
 	};
 	webrtc.sendDirectlyToAll('GAME', 'PLAYER_SELECTED_TEAM', player);
+	document.getElementById('blueTeamButton').style.display = 'none';
+	document.getElementById('redTeamButton').style.display = 'block';
+	document.getElementById('navigatorButton').style.display = 'block';
+	document.getElementById('gunnerTeamButton').style.display = 'block';
+}, false);
+
+navigatorButton.addEventListener('click', function() {
+	console.log('play as nav');
+	role = 'navigator';
+	var player = {
+		'nickname': nickname,
+		'UID': UID,
+		'team': team,
+		'role': role
+	};
+	webrtc.sendDirectlyToAll('GAME', 'PLAYER_SELECTED_ROLE', player);
+	document.getElementById('navigatorButton').style.display = 'none';
+	document.getElementById('gunnerTeamButton').style.display = 'block';
+}, false);
+
+gunnerTeamButton.addEventListener('click', function() {
+	console.log('play as gunn');
+	role = 'gunner';
+	var player = {
+		'nickname': nickname,
+		'UID': UID,
+		'team': team,
+		'role': role
+	};
+	webrtc.sendDirectlyToAll('GAME', 'PLAYER_SELECTED_ROLE', player);
+	document.getElementById('gunnerTeamButton').style.display = 'none';
+	document.getElementById('navigatorButton').style.display = 'block';
 }, false);
 
 startGameButton.addEventListener('click', function() {
@@ -115,6 +158,23 @@ downButton.addEventListener('click', function() {
 	webrtc.sendDirectlyToAll('GAME', 'NAVIGATION', command);
 }, false);
 
+shootLeftButton.addEventListener('click', function() {
+	console.log('Shoot Left clicked');
+	var command = {
+		'direction': 'left',
+		'team': team
+	};
+	webrtc.sendDirectlyToAll('GAME', 'GUNNER', command);
+}, false);
+shootRightButton.addEventListener('click', function() {
+	console.log('Shoot Right clicked');
+	var command = {
+		'direction': 'left',
+		'team': team
+	};
+	webrtc.sendDirectlyToAll('GAME', 'GUNNER', command);
+}, false);
+
 function generateUID(length, chars) {
 	console.log("GENERATE UID");
     var result = '';
@@ -149,9 +209,14 @@ webrtc.on('channelMessage', function (peer, label, data) {
 			case 'GAME_STARTING':
 				console.log('game is starting');
 				document.getElementById('startGame').style.display = 'none';
-				document.getElementById('teamAndRoleInput').style.display = 'none';
+				document.getElementById('teamInput').style.display = 'none';
+				document.getElementById('roleInput').style.display = 'none';
 				document.getElementById('titleSection').style.display = 'none';
-				document.getElementById('navigatorCommands').style.display = 'block';
+				if (role === 'navigator') {
+					document.getElementById('navigatorCommands').style.display = 'block';
+				} else if (role === 'gunner') {
+					document.getElementById('gunnerCommands').style.display = 'block';
+				}
 				break;
 			default:
 				console.log('WARNING, ERROR! TYPE DIDNT MATCH!');

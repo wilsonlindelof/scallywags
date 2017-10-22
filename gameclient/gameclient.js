@@ -71,10 +71,6 @@ webrtc.on('leftRoom', function (roomName) {
 });
 
 webrtc.on('channelMessage', function (peer, label, data) {
-	/*if (label !== 'text chat') return;
-	else if (data.type == 'chat') {
-	console.log('Received message: ' + data.payload + ' from ' + peer.id);
-	}*/
 	//game client should only listen to GAME label messages
 	if (label === 'GAME') {
 		console.log("ON MESSAGE", peer, label, data);
@@ -104,7 +100,21 @@ webrtc.on('channelMessage', function (peer, label, data) {
 						console.log('going to set players team from ', players[i].team, ' to ', data.payload.team);
 						console.log(players[i].team);
 						players[i].team = data.payload.team;
+						players[i].role = data.payload.role;
 						console.log(players[i].team);
+					}
+				}
+				updatePlayerLobby();
+				break;
+			case 'PLAYER_SELECTED_ROLE':
+				console.log('A player has selected a role');
+				for (var i = 0; i < players.length; i++) {
+					if (players[i].UID === data.payload.UID) {
+						console.log(players[i], 'MATCH');
+						console.log('going to set players role from ', players[i].role, ' to ', data.payload.role);
+						console.log(players[i].role);
+						players[i].role = data.payload.role;
+						console.log(players[i].role);
 					}
 				}
 				updatePlayerLobby();
@@ -112,6 +122,7 @@ webrtc.on('channelMessage', function (peer, label, data) {
 			case 'START_GAME':
 				console.log('start the game');
 				webrtc.sendDirectlyToAll('COMMAND', 'GAME_STARTING', null);
+				let now = Date.now();
 				gameState = {
 					'red': {
 						'x': 100,
@@ -119,7 +130,9 @@ webrtc.on('channelMessage', function (peer, label, data) {
 						'vectorX': 0,
 						'vectorY': 1,
 						'desiredVectorX': 0,
-						'desiredVectorY': 1
+						'desiredVectorY': 1,
+						'lastShot': now,
+						'cannonballs': []
 					},
 					'blue': {
 						'x': 900,
@@ -127,7 +140,9 @@ webrtc.on('channelMessage', function (peer, label, data) {
 						'vectorX': 0,
 						'vectorY': -1,
 						'desiredVectorX': 0,
-						'desiredVectorY': -1
+						'desiredVectorY': -1,
+						'lastShot': now,
+						'cannonballs': []
 					}
 				};
 				document.getElementById('titleSection').style.display = 'none';
@@ -145,6 +160,22 @@ webrtc.on('channelMessage', function (peer, label, data) {
 				gameState[data.payload.team].desiredVectorX = data.payload.vectorX;
 				gameState[data.payload.team].desiredVectorY = data.payload.vectorY;
 				console.log('VECTORS: ', gameState[data.payload.team].desiredVectorX, gameState[data.payload.team].desiredVectorY);
+				break;
+			case 'GUNNER':
+				console.log('gunnery received');
+				let nowG = Date.now();
+				if (nowG - gameState[data.payload.team].lastShot > 1500) {
+					let cannonball = {
+						'timeLeft': 4000,
+						'x': gameState[data.payload.team].x,
+						'y': gameState[data.payload.team].y,
+						'vectorX': gameState[data.payload.team].vectorX,
+						'vectorY': gameState[data.payload.team].vectorY,
+					};
+					//need to take the data.payload.direction to determine the actual direction, but you might as well figure out ship steering for real at the same time.
+					gameState[data.payload.team].cannonballs.push(cannonball);
+					gameState[data.payload.team].lastShot = nowG;
+				}
 				break;
 			default:
 				console.log('WARNING, ERROR! TYPE DIDNT MATCH!');
@@ -169,9 +200,6 @@ function update(dt) {
 	
 	gameState['red']['x'] = gameState['red']['x'] + (shipSpeed * dt * gameState['red']['vectorX']);
 	gameState['red']['y'] = gameState['red']['y'] + (shipSpeed * dt * gameState['red']['vectorY']);	
-	
-	//console.log('x is going', ( ((-gameState['red']['vectorX'] + gameState['red']['desiredVectorX']) > 0) ? 1 : ( ((-gameState['red']['vectorX'] + gameState['red']['desiredVectorX']) < 0) ? -1 : 0 ) ) );
-	//console.log('y is going', ( ((-gameState['red']['vectorY'] + gameState['red']['desiredVectorY']) > 0) ? 1 : ( ((-gameState['red']['vectorY'] + gameState['red']['desiredVectorY']) < 0) ? -1 : 0 ) ) );
 	
 	gameState['red']['vectorX'] = gameState['red']['vectorX'] + (shipTurnSpeed * dt * ( ((-gameState['red']['vectorX'] + gameState['red']['desiredVectorX']) > 0) ? 1 : ( ((-gameState['red']['vectorX'] + gameState['red']['desiredVectorX']) < 0) ? -1 : 0 ) ) );
 	gameState['red']['vectorY'] = gameState['red']['vectorY'] + (shipTurnSpeed * dt * ( ((-gameState['red']['vectorY'] + gameState['red']['desiredVectorY']) > 0) ? 1 : ( ((-gameState['red']['vectorY'] + gameState['red']['desiredVectorY']) < 0) ? -1 : 0 ) ) );
@@ -235,6 +263,16 @@ function update(dt) {
 		gameState['blue']['y'] = 1000;
 	}
 	//check collisions, bullets, etc
+	gameState['red'].cannonballs.forEach(function(cannonball) {
+		cannonball['x'] = cannonball['x'] + (shipSpeed * 2.5 * dt * cannonball['vectorX']);
+		cannonball['y'] = cannonball['y'] + (shipSpeed * 2.5 * dt * cannonball['vectorY']);	
+		// if (collision)
+	});
+	gameState['blue'].cannonballs.forEach(function(cannonball) {
+		cannonball['x'] = cannonball['x'] + (shipSpeed * 2.5 * dt * cannonball['vectorX']);
+		cannonball['y'] = cannonball['y'] + (shipSpeed * 2.5 * dt * cannonball['vectorY']);
+		// if (collision)
+	});
 }
 
 function render() {
@@ -243,13 +281,17 @@ function render() {
 	
 	//132, 448,
 	
-	drawRotated('../assets/Ship01.png', gameState['red']['x'], gameState['red']['y'], 44, 150, gameState['red']['vectorX'], gameState['red']['vectorY'])
-	
-	/*ctx.drawImage(resources.get('../assets/Ship01.png'), 
-		gameState['blue']['x'], gameState['blue']['y'],
-		44, 150);*/
+	drawRotated('../assets/Ship01.png', gameState['red']['x'], gameState['red']['y'], 44, 150, gameState['red']['vectorX'], gameState['red']['vectorY']);
 		
-	drawRotated('../assets/Ship01.png', gameState['blue']['x'], gameState['blue']['y'], 44, 150, gameState['blue']['vectorX'], gameState['blue']['vectorY'])
+	drawRotated('../assets/Ship01.png', gameState['blue']['x'], gameState['blue']['y'], 44, 150, gameState['blue']['vectorX'], gameState['blue']['vectorY']);
+	
+	ctx.fillStyle = '#222222';	
+	gameState['red'].cannonballs.forEach(function(cannonball) {
+		ctx.fillRect(cannonball.x, cannonball.y, 5, 5);
+	});
+	gameState['blue'].cannonballs.forEach(function(cannonball) {
+		ctx.fillRect(cannonball.x, cannonball.y, 5, 5);
+	});	
 }
 
 function drawRotated(imageURL, x, y, width, height, vectorX, vectorY) {
