@@ -26,6 +26,8 @@ var webrtc = new SimpleWebRTC({
     autoRequestMedia: false,
 	debug: true,
 	enableDataChannels: true,
+	media: { video: false, audio: false},
+	receiveMedia: { offerToReceiveAudio: 0, offerToReceiveVideo: 0},
 });
 
 // we have to wait until it's ready

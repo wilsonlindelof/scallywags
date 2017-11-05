@@ -169,8 +169,10 @@ function generateUID(length, chars) {
 
 var webrtc = new SimpleWebRTC({
     autoRequestMedia: false,
-	debug: false,
+	debug: true,
 	enableDataChannels: true,
+	media: { video: false, audio: false},
+	receiveMedia: { offerToReceiveAudio: 0, offerToReceiveVideo: 0},
 });
 
 webrtc.on('channelMessage', function (peer, label, data) {
