@@ -159,13 +159,27 @@ webrtc.on('channelMessage', function (peer, label, data) {
 				console.log('gunnery received');
 				let nowG = Date.now();
 				if (nowG - gameState[data.payload.team].lastShot > 1500) {
-					let cannonball = {
+					let cannonball1 = {
+						'timeLeft': 4000,
+						'x': gameState[data.payload.team].x,
+						'y': gameState[data.payload.team].y,
+						'vectorDegree': (data.payload.direction === 'LEFT' ? gameState[data.payload.team].vectorDegree - 70 : gameState[data.payload.team].vectorDegree + 70 ),
+					};
+					gameState[data.payload.team].cannonballs.push(cannonball1);
+					let cannonball2 = {
 						'timeLeft': 4000,
 						'x': gameState[data.payload.team].x,
 						'y': gameState[data.payload.team].y,
 						'vectorDegree': (data.payload.direction === 'LEFT' ? gameState[data.payload.team].vectorDegree - 75 : gameState[data.payload.team].vectorDegree + 75 ),
 					};
-					gameState[data.payload.team].cannonballs.push(cannonball);
+					gameState[data.payload.team].cannonballs.push(cannonball2);
+					let cannonball3 = {
+						'timeLeft': 4000,
+						'x': gameState[data.payload.team].x,
+						'y': gameState[data.payload.team].y,
+						'vectorDegree': (data.payload.direction === 'LEFT' ? gameState[data.payload.team].vectorDegree - 80 : gameState[data.payload.team].vectorDegree + 80 ),
+					};
+					gameState[data.payload.team].cannonballs.push(cannonball3);
 					gameState[data.payload.team].lastShot = nowG;
 				}
 				break;
@@ -310,6 +324,6 @@ function updatePlayerLobby() {
 }
 
 resources.load([
-    '../assets/Ship01.png'
+    '../assets/images/Ship01.png'
 ]);
 resources.onReady(initialize);
