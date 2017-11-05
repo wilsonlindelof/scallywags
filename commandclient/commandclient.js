@@ -27,7 +27,11 @@ console.log = function(x) {
 		var args = Array.prototype.slice.call(arguments);
 		args.forEach(function (arg) {
 			if (typeof arg === 'object') {
-				argString += JSON.stringify(arg);
+				try {
+					argString += JSON.stringify(arg);
+				} catch (e) {
+					argString += 'Error! ' + e + '<br> ORIGINAL: ' + arg;
+				}
 			} else {
 				argString += arg;
 			}
