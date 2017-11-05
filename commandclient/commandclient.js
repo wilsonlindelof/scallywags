@@ -15,6 +15,31 @@ var shootRightButton = document.getElementById('shootRightButton');
 var startGameButton = document.getElementById('startGameButton');
 var compass = document.getElementById('compass');
 
+var logDiv;
+var privateLog = console.log;
+console.log = function(x) {
+	if (!logDiv) {
+		logDiv = document.getElementById('logDiv');
+	}
+	if (logDiv) {
+		privateLog.apply(console, arguments);
+		let argString = '';
+		var args = Array.prototype.slice.call(arguments);
+		args.forEach(function (arg) {
+			if (typeof arg === 'object') {
+				argString += JSON.stringify(arg);
+			} else {
+				argString += arg;
+			}
+			argString += '<br>';
+		});
+		logDiv.innerHTML = logDiv.innerHTML + '<br>' + argString;
+		
+	} else {
+		console.origLog('error on logdiv');
+	} 
+}
+
 joinGameButton.addEventListener('click', function() {
 	console.log('Join Game');
 	var gameCodeInput = document.getElementById('gameCode');	
